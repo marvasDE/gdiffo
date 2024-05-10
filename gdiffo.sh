@@ -6,11 +6,21 @@ gdiffo() {
         return 0
     fi
 
-    re='^[0-9]+$'
+    one_number_pattern='^[0-9]+$'
     diffnames=$(git diff --name-only)
 
-    if [[ $1 =~ $re ]] ; then
+    if [[ $1 =~ $one_number_pattern ]] ; then
         git diff $(echo "$diffnames" | head -$1 | tail +$1)
+        return 0
+    fi
+
+    multiple_numbers_pattern='^[0-9]([0-9]|,|-)+[0-9]$'
+    if [[ $1 =~ $multiple_numbers_pattern ]] ; then
+        awknumbers=$(echo $1 | sed -E 's/([0-9]+)-([0-9]+)/\NR>=\1 \&\& NR<=\2/g')
+        awknumbers=$(echo $awknumbers | sed -E 's/(^|,)([0-9]+)/\1NR == \2/g')
+        awknumbers=$(echo $awknumbers | sed -E 's/,/ || /g')
+
+        git diff $(echo "$diffnames" | awk "$awknumbers")
         return 0
     fi
 
